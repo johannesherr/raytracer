@@ -98,10 +98,11 @@ window.onload = function() {
   console.log('number of pixels: ' + nPix);
   console.log('pixel width: ' + pixel);
 
-  var world = [{center: [-0.5, 0.25, -4], radius: 1, col: 'yellow'},
-               {center: [0.9, 0.6, -2.5], radius: 0.05, col: 'yellow'},
-               {center: [0.12, 0.9, -2.5], radius: 0.05, col: 'yellow'},
-               {center: [0.5, 0.25, -4], radius: 1, col: 'red'}];
+  var world = [{center: [-0.5, 0.25, -8], radius: 1, col: 'yellow'},
+               {center: [1, 0.6, -5], radius: 0.05, col: 'yellow'},
+               {center: [0.12, 0.9, -5], radius: 0.05, col: 'yellow'},
+               {center: [1, 1, -5], radius: 0.05, col: 'yellow'},
+               {center: [0.5, 0.25, -7.6], radius: 1, col: 'red'}];
 //  var world = [{x: 0, y: 0, z: -3, col: 'green'}];
 
   var paintPixel = function(x, y, col) {
@@ -137,8 +138,6 @@ window.onload = function() {
 //      console.log( 'light: ' + amountOfLight );
       return 'rgb(' + Math.max(Math.floor(255 * amountOfLight), 100) + ', 0, 0)';
 
-
-//      return selectedColor;
     } else {
       return null;
     }
@@ -175,31 +174,61 @@ window.onload = function() {
     }
   };
 
-
-  for (var px = 0; px < nPix; px++) {
-//    console.log( 'row' );
-
+  var draw = function() {
+    var img = [];
     for (var py = 0; py < nPix; py++) {
+      var row = [];
+      for (var px = 0; px < nPix; px++) {
+        var ray = [
+          (px + 0.5) / nPix - 0.5,
+          0.5 - (py + 0.5) / nPix,
+            -2
+        ];
 
-      var ray = [
-        (px + 0.5) / nPix - 0.5,
-        0.5 - (py + 0.5) / nPix,
-        -1
-      ];
-
-      if (ray[1] > 0) {
-        paintPixel(px, py, 'rgb(215, 215, 255)');
-      } else {
-        paintPixel(px, py, 'rgb(171, 255, 151)');
+        var col = trace(ray, [0, 0, 0], world);
+        if (col) {
+          row.push(col);
+        } else {
+          if (ray[1] > 0) {
+            row.push('rgb(215, 215, 255)');
+          } else {
+            row.push('rgb(171, 255, 151)');
+          }
+        }
       }
-
-      var col = trace(ray, [0, 0, 0], world);
-      if (col) {
-        paintPixel(px, py, col);
-      }
-
+      img.push(row);
     }
+    return img;
+  };
+
+  var paint = function(img) {
+    for (var y = 0; y < img.length; y++) {
+      for (var x = 0; x < img[y].length; x++) {
+        paintPixel(x, y, img[y][x]);
+      }
+    }
+  };
+
+  var nFrames = 30;
+  var frames = [];
+  for (var i = 0; i < nFrames; i++) {
+    world[1].center[0] -= (0.2 * 1/3);
+    frames.push(draw());
+    console.log('done rendering frame ' + (i + 1));
   }
+
+  var forEver = function(f) {
+    f();
+    setTimeout(function() {
+      forEver(f);
+    }, 50);
+  };
+
+  var cnt = 0;
+  forEver(function() {
+    paint(frames[cnt++]);
+    if (cnt >= frames.length) cnt = 0;
+  });
 
   if (drawRaster) {
     for (var c1 = 0; c1 < nPix; c1++) {
