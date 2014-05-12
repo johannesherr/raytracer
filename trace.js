@@ -97,22 +97,23 @@ window.onload = function() {
   var ctx = c.getContext('2d');
 
   var drawRaster = false;
-  var nPix = 500;
+  var nPix = 80;
   var pixel = c.width / nPix;
   var sphereRadius = 1;
 //  var light = [2.5, 3, 0];
   var light = [1, 2, 0];
-  var light2 = [-1, -2, 0];
+  var light2 = [-1, 3, -10];
 
   console.log('picture dimensions: ' + c.width + ', ' + c.height);
   console.log('number of pixels: ' + nPix);
   console.log('pixel width: ' + pixel);
 
   var world = [{center: [-0.5, 0.25, -8], radius: 1, col: 'yellow'},
-               {center: [1, 0.6, -5], radius: 0.05, col: 'yellow'},
+               {center: [1.2, 0.52, -4.2], radius: 0.05, col: 'yellow'},
+//               {center: [0.7, 0.52, -4.2], radius: 0.05, col: 'yellow'},
+               {center: [1, 1, -5], radius: 0.05, col: 'yellow'},
                {center: [0.12, 0.9, -5], radius: 0.05, col: 'yellow'},
                {center: [-1.7, 0.5, -7], radius: 0.05, col: 'yellow'},
-               {center: [1, 1, -5], radius: 0.05, col: 'yellow'},
                {center: [0.5, 0.25, -7.6], radius: 1, col: 'red'}];
 //  var world = [{x: 0, y: 0, z: -3, col: 'green'}];
 
@@ -157,12 +158,12 @@ window.onload = function() {
       var l2 = getLight(light2);
 //      var l2 = [200,0,0];
       for (i = 0; i < sum.length; i++) {
-        sum[i] = Math.floor((l1[i] + l2[i]) / 2);
+        sum[i] = Math.floor((l1[i] + l2[i]) * 0.7);
       }
 
       if (mirrored) {
         for (var i = 0; i < sum.length; i++) {
-          sum[i] -= mirrored[i] * 0.5;
+          sum[i] -= Math.floor((255 - mirrored[i]) * 0.3);
         }
       } else {
         //sum = getLight(light);
@@ -242,7 +243,7 @@ window.onload = function() {
     }
   };
 
-  var nFrames = 30;
+  var nFrames = 40;
   var frames = [];
   for (var i = 0; i < nFrames; i++) {
     world[1].center[0] -= (0.2 * 1/3);
