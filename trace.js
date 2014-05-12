@@ -97,11 +97,12 @@ window.onload = function() {
   var ctx = c.getContext('2d');
 
   var drawRaster = false;
-  var nPix = 80;
+  var nPix = 500;
   var pixel = c.width / nPix;
   var sphereRadius = 1;
 //  var light = [2.5, 3, 0];
   var light = [1, 2, 0];
+  var light2 = [-1, -2, 0];
 
   console.log('picture dimensions: ' + c.width + ', ' + c.height);
   console.log('number of pixels: ' + nPix);
@@ -127,34 +128,44 @@ window.onload = function() {
 
     if (result) {
       var hitPoint = m.vecAdd(m.vecMult(result.min, ray), origin);
-      var dir2 = m.vecSub(light, hitPoint);
-
-      var hit2 = intersect(dir2, hitPoint, world);
-      var lightIsBlocked = hit2;
-
       var normalDir = m.vecSub(hitPoint, result.obj.center);
 
-      var selectedColor = result.obj.col;
-      var directLight;
-      if (lightIsBlocked) {
-        directLight = [100, 0, 0];
-      } else {
-        var amountOfLight = Math.abs(m.dotProduct(
-          m.normalize(normalDir),
-          m.normalize(dir2)));
+      var getLight = function(light) {
+        var dir2 = m.vecSub(light, hitPoint);
+        var lightIsBlocked = intersect(dir2, hitPoint, world);
 
-         directLight = [Math.max(Math.floor(255 * amountOfLight), 100), 0, 0];
-      }
+        var selectedColor = result.obj.col;
+        var directLight;
+        if (lightIsBlocked) {
+          directLight = [100, 0, 0];
+        } else {
+          var amountOfLight = Math.abs(m.dotProduct(
+            m.normalize(normalDir),
+            m.normalize(dir2)));
+
+          directLight = [Math.max(Math.floor(255 * amountOfLight), 100), 0, 0];
+        }
+
+        return directLight;
+      };
 
       var mirrored = trace(m.mirror(normalDir, ray), hitPoint, world, limit - 1);
 
-      var sum = [];
+      var sum = [0,0,0];
+
+      var l1 = getLight(light);
+      var l2 = getLight(light2);
+//      var l2 = [200,0,0];
+      for (i = 0; i < sum.length; i++) {
+        sum[i] = Math.floor((l1[i] + l2[i]) / 2);
+      }
+
       if (mirrored) {
-        for (var i = 0; i < directLight.length; i++) {
-          sum[i] = (directLight[i] - mirrored[i] * 0.5);
+        for (var i = 0; i < sum.length; i++) {
+          sum[i] -= mirrored[i] * 0.5;
         }
       } else {
-        sum = directLight;
+        //sum = getLight(light);
       }
 
 //      console.log( 'light: ' + amountOfLight );
@@ -231,7 +242,7 @@ window.onload = function() {
     }
   };
 
-  var nFrames = 1;
+  var nFrames = 30;
   var frames = [];
   for (var i = 0; i < nFrames; i++) {
     world[1].center[0] -= (0.2 * 1/3);
