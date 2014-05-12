@@ -78,6 +78,15 @@ var m = (function() {
     return module.vecMult(1 / m.length(v), v);
   };
 
+  module.mirror = function(normal, v) {
+    normal = module.normalize(normal);
+    v = module.normalize(v);
+    var t = Math.abs(module.dotProduct(normal, v));
+    var base = module.vecMult(t, normal);
+
+    return module.vecAdd(base, module.vecSub(base, v));
+  };
+
   return module;
 }());
 
@@ -88,7 +97,7 @@ window.onload = function() {
   var ctx = c.getContext('2d');
 
   var drawRaster = false;
-  var nPix = 500;
+  var nPix = 80;
   var pixel = c.width / nPix;
   var sphereRadius = 1;
 //  var light = [2.5, 3, 0];
@@ -101,6 +110,7 @@ window.onload = function() {
   var world = [{center: [-0.5, 0.25, -8], radius: 1, col: 'yellow'},
                {center: [1, 0.6, -5], radius: 0.05, col: 'yellow'},
                {center: [0.12, 0.9, -5], radius: 0.05, col: 'yellow'},
+               {center: [-1.7, 0.5, -7], radius: 0.05, col: 'yellow'},
                {center: [1, 1, -5], radius: 0.05, col: 'yellow'},
                {center: [0.5, 0.25, -7.6], radius: 1, col: 'red'}];
 //  var world = [{x: 0, y: 0, z: -3, col: 'green'}];
@@ -110,7 +120,9 @@ window.onload = function() {
     ctx.fillRect(Math.floor(x * pixel), Math.floor(y * pixel), Math.ceil(pixel), Math.ceil(pixel));
   };
 
-  var trace = function(ray, origin, world) {
+  var trace = function(ray, origin, world, limit) {
+    if (limit === 0) return null;
+
     var result = intersect(ray, origin, world);
 
     if (result) {
@@ -120,23 +132,33 @@ window.onload = function() {
       var hit2 = intersect(dir2, hitPoint, world);
       var lightIsBlocked = hit2;
 
+      var normalDir = m.vecSub(hitPoint, result.obj.center);
+
       var selectedColor = result.obj.col;
+      var directLight;
       if (lightIsBlocked) {
-        if (selectedColor === 'yellow') {
-          selectedColor = 'orange';
-        } else {
-          selectedColor = 'dark' + selectedColor;
-        }
-        return 'rgb(100, 0, 0)';
+        directLight = [100, 0, 0];
+      } else {
+        var amountOfLight = Math.abs(m.dotProduct(
+          m.normalize(normalDir),
+          m.normalize(dir2)));
+
+         directLight = [Math.max(Math.floor(255 * amountOfLight), 100), 0, 0];
       }
 
-      var normalDir = m.vecSub(hitPoint, result.obj.center);
-      var amountOfLight = Math.abs(m.dotProduct(
-        m.normalize(normalDir),
-        m.normalize(dir2)));
+      var mirrored = trace(m.mirror(normalDir, ray), hitPoint, world, limit - 1);
+
+      var sum = [];
+      if (mirrored) {
+        for (var i = 0; i < directLight.length; i++) {
+          sum[i] = (directLight[i] - mirrored[i] * 0.5);
+        }
+      } else {
+        sum = directLight;
+      }
 
 //      console.log( 'light: ' + amountOfLight );
-      return 'rgb(' + Math.max(Math.floor(255 * amountOfLight), 100) + ', 0, 0)';
+      return sum;
 
     } else {
       return null;
@@ -185,9 +207,9 @@ window.onload = function() {
             -2
         ];
 
-        var col = trace(ray, [0, 0, 0], world);
+        var col = trace(ray, [0, 0, 0], world, 2);
         if (col) {
-          row.push(col);
+          row.push('rgb(' + col[0] + ', ' + col[1] + ', ' + col[2] + ')');
         } else {
           if (ray[1] > 0) {
             row.push('rgb(215, 215, 255)');
@@ -209,7 +231,7 @@ window.onload = function() {
     }
   };
 
-  var nFrames = 30;
+  var nFrames = 1;
   var frames = [];
   for (var i = 0; i < nFrames; i++) {
     world[1].center[0] -= (0.2 * 1/3);
@@ -219,7 +241,8 @@ window.onload = function() {
 
   var forEver = function(f) {
     f();
-    setTimeout(function() {
+    requestAnimationFrame(function() {
+//    setTimeout(function() {
       forEver(f);
     }, 50);
   };
