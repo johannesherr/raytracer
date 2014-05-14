@@ -47,27 +47,35 @@ var m = (function() {
   };
 
   module.vecMult = function(scalar, vector) {
-    return vector.map(function(x) {
-      return scalar * x;
-    });
+    var ret = new Array(vector.length);
+    for (var i = 0; i < ret.length; i++) {
+      ret[i] = scalar * vector[i];
+    }
+    return ret;
   };
 
   module.vecAdd = function(vecA, vecB) {
-    return vecA.map(function(x, i) {
-      return x + vecB[i];
-    });
+    var ret = new Array(vecA.length);
+    for (var i = 0; i < ret.length; i++) {
+      ret[i] = vecA[i] + vecB[i];
+    }
+    return ret;
   };
 
   module.vecSub = function(vecA, vecB) {
-    return vecA.map(function(x, i) {
-      return x - vecB[i];
-    });
+    var ret = new Array(vecA.length);
+    for (var i = 0; i < ret.length; i++) {
+      ret[i] = vecA[i] - vecB[i];
+    }
+    return ret;
   };
 
-  module.dotProduct = function(vA, vB) {
-    return vA.reduce(function(acc, x, i) {
-      return acc + x * vB[i];
-    }, 0);
+  module.dotProduct = function(vecA, vecB) {
+    var ret = 0;
+    for (var i = 0; i < vecA.length; i++) {
+      ret += vecA[i] * vecB[i];
+    }
+    return ret;
   };
 
   module.length = function(v) {
@@ -156,7 +164,6 @@ window.onload = function() {
 
       var l1 = getLight(light);
       var l2 = getLight(light2);
-//      var l2 = [200,0,0];
       for (i = 0; i < sum.length; i++) {
         sum[i] = Math.floor((l1[i] + l2[i]) * 0.7);
       }
@@ -165,18 +172,12 @@ window.onload = function() {
         for (var i = 0; i < sum.length; i++) {
           sum[i] = Math.floor(sum[i] * 0.3 + mirrored[i] * 0.7);
         }
-      } else {
-        //sum = getLight(light);
       }
-
-//      console.log( 'light: ' + amountOfLight );
       return sum;
 
     } else {
       return null;
     }
-
-
   };
 
   var intersect = function(ray, origin, world) {
@@ -189,9 +190,13 @@ window.onload = function() {
       var intersections = m.intersectSphere(ray, origin, obj.center, obj.radius);
 
       if (intersections.length !== 0) {
-        var curMin = intersections.reduce(function(a, b) {
-          return Math.min(a, b);
-        }, Number.MAX_VALUE);
+
+        var curMin;
+        if (intersections.length == 2) {
+          curMin = Math.min(intersections[0], intersections[1]);
+        } else {
+          curMin = intersections[0];
+        }
 
         if (curMin < min) {
           min = curMin;
