@@ -2,35 +2,43 @@
 
 var m = (function() {
   var module = {};
-      module.solveQuad = function(a, b, c) {
-      var d = Math.pow(b, 2) - 4 * a * c;
-      if (d < 0) {
-        return [];
+  module.dotProduct = function(vecA, vecB) {
+    var ret = 0;
+    for (var i = 0; i < vecA.length; i++) {
+      ret += vecA[i] * vecB[i];
+    }
+    return ret;
+  };
+
+  module.solveQuad = function(a, b, c) {
+    var d = Math.pow(b, 2) - 4 * a * c;
+    if (d < 0) {
+      return [];
+    } else {
+      var solve = function(d, sig) {
+        return (-b + sig * Math.sqrt(d)) / (2 * a);
+      };
+      var solutions = [solve(d, 1), solve(d, -1)];
+      if (d === 0) {
+        return solutions.slice(0, 1);
       } else {
-        var solve = function(d, sig) {
-          return (-b + sig * Math.sqrt(d)) / (2 * a);
-        };
-        var solutions = [solve(d, 1), solve(d, -1)];
-        if (d === 0) {
-          return solutions.slice(0, 1);
-        } else {
-          return solutions;
-        }
+        return solutions;
       }
-    };
-    module.sq = function(x) {
-      return Math.pow(x, 2);
-    };
-    module.sum = function(a, b) {
-      return a + b;
-    };
+    }
+  };
+  module.sq = function(x) {
+    return x * x;
+  };
+  module.sum = function(a, b) {
+    return a + b;
+  };
 
   module.intersectSphere = function(rayDirection, rayOrigin, sphereCenter, sphereRadius) {
     var ray = rayDirection;
     var origin = rayOrigin;
     var center = sphereCenter;
 
-    var a = ray.map(module.sq).reduce(module.sum);
+    var a = module.dotProduct(ray, ray);
     var b = 2 * (ray[0] * (origin[0] - center[0]) +
                  ray[1] * (origin[1] - center[1]) +
                  ray[2] * (origin[2] - center[2]));
@@ -40,10 +48,12 @@ var m = (function() {
           sphereRadius;
 
     var solutions = module.solveQuad(a, b, c);
-    return solutions.filter(function(x) {
-      return x > 0.001;
-    });
-
+    var ret = [];
+    for (var i = 0; i < solutions.length; i++) {
+      if (solutions[i] > 0.001)
+        ret.push(solutions[i]);
+    }
+    return ret;
   };
 
   module.vecMult = function(scalar, vector) {
@@ -66,14 +76,6 @@ var m = (function() {
     var ret = new Array(vecA.length);
     for (var i = 0; i < ret.length; i++) {
       ret[i] = vecA[i] - vecB[i];
-    }
-    return ret;
-  };
-
-  module.dotProduct = function(vecA, vecB) {
-    var ret = 0;
-    for (var i = 0; i < vecA.length; i++) {
-      ret += vecA[i] * vecB[i];
     }
     return ret;
   };
@@ -105,7 +107,7 @@ window.onload = function() {
   var ctx = c.getContext('2d');
 
   var drawRaster = false;
-  var nPix = 400;
+  var nPix = 500;
   var pixel = c.width / nPix;
   var sphereRadius = 1;
 //  var light = [2.5, 3, 0];
