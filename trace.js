@@ -97,7 +97,7 @@ window.onload = function() {
   var ctx = c.getContext('2d');
 
   var drawRaster = false;
-  var nPix = 80;
+  var nPix = 400;
   var pixel = c.width / nPix;
   var sphereRadius = 1;
 //  var light = [2.5, 3, 0];
@@ -163,7 +163,7 @@ window.onload = function() {
 
       if (mirrored) {
         for (var i = 0; i < sum.length; i++) {
-          sum[i] -= Math.floor((255 - mirrored[i]) * 0.3);
+          sum[i] = Math.floor(sum[i] * 0.3 + mirrored[i] * 0.7);
         }
       } else {
         //sum = getLight(light);
@@ -219,7 +219,7 @@ window.onload = function() {
             -2
         ];
 
-        var col = trace(ray, [0, 0, 0], world, 2);
+        var col = trace(ray, [0, 0, 0], world, 4);
         if (col) {
           row.push('rgb(' + col[0] + ', ' + col[1] + ', ' + col[2] + ')');
         } else {
@@ -243,7 +243,7 @@ window.onload = function() {
     }
   };
 
-  var nFrames = 40;
+  var nFrames = 1;
   var frames = [];
   for (var i = 0; i < nFrames; i++) {
     world[1].center[0] -= (0.2 * 1/3);
