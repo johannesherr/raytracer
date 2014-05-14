@@ -53,6 +53,8 @@ window.onload = function() {
       frames[e.data.idx] = e.data.img;
       finishedFrames++;
       console.log('done rendering frame');
+
+      document.getElementById('output').innerText = (100 * finishedFrames / nFrames) + " %";
     });
   }
 
