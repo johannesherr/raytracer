@@ -17,15 +17,16 @@ window.onload = function() {
   console.log('number of pixels: ' + nPix);
   console.log('pixel width: ' + pixel);
 
-  var world = {objs: [{center: [-0.5, 0.25, -8], radius: 1, col: 'yellow'},
-               {center: [1.2, 0.52, -4.2], radius: 0.05, col: 'yellow'},
-//               {center: [0.7, 0.52, -4.2], radius: 0.05, col: 'yellow'},
-               {center: [1, 1, -5], radius: 0.05, col: 'yellow'},
-               {center: [0.12, 0.9, -5], radius: 0.05, col: 'yellow'},
-               {center: [-1.7, 0.5, -7], radius: 0.05, col: 'yellow'},
-               {center: [0.5, 0.25, -7.6], radius: 1, col: 'red'}],
+  var world = {objs:
+               [{center: [-0.5, 0.25, -8], radius: 1, col: 0, type: 'sphere'},
+                {center: [0.7, 0.4, -2.2], radius: 0.05, col: 0, type: 'sphere'},
+                {center: [1, 1, -5], radius: 0.05, col: 0, type: 'sphere'},
+                {center: [0.12, 0.9, -5], radius: 0.05, col: 0, type: 'sphere'},
+                {center: [-1.7, 0.5, -7], radius: 0.05, col: 0, type: 'sphere'},
+                {center: [0.5, 0.25, -7.6], radius: 1, col: 0, type: 'sphere'},
+                {center: [0, -0.3, 0], normal: [0, 1, 0], col: 2, type: 'plane'}],
                lights: [light, light2] };
-//  var world = [{x: 0, y: 0, z: -3, col: 'green'}];
+
 
   var paintPixel = function(x, y, col) {
     ctx.fillStyle = col;
@@ -40,12 +41,13 @@ window.onload = function() {
     }
   };
 
-  var worker1 = new Worker('render.js');
-  var worker2 = new Worker('render.js');
+  var workers = [];
+  for (var i = 0; i < 6; i++) {
+    workers.push(new Worker('render.js'));
+  }
   var curWorker = 0;
-  var workers = [worker1, worker2];
 
-  var nFrames = 20;
+  var nFrames = 1;
   var finishedFrames = 0;
   var frames = [];
   for (var i = 0; i < workers.length; i++) {
@@ -88,16 +90,19 @@ window.onload = function() {
     var forEver = function(f) {
       f();
       requestAnimationFrame(function() {
-        //    setTimeout(function() {
-        forEver(f);
+          forEver(f);
       }, 50);
     };
 
-    var cnt = 0;
-    forEver(function() {
-      paint(frames[cnt++]);
-      if (cnt >= frames.length) cnt = 0;
-    });
+    if (frames.length == 1) {
+      paint(frames[0]);
+    } else {
+      var cnt = 0;
+      forEver(function() {
+        paint(frames[cnt++]);
+        if (cnt >= frames.length) cnt = 0;
+      });
+    }
   };
 
 };
