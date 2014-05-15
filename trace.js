@@ -1,7 +1,12 @@
 'use strict';
 
 
-window.onload = function() {
+window.onload = raytrace;
+
+var stopVid;
+function raytrace() {
+  stopVid = true;
+  document.getElementById('output').innerText = "0 %";
   var start = new Date().getTime();
 
   var c = document.querySelector('#canvas');
@@ -47,11 +52,11 @@ window.onload = function() {
   }
   var curWorker = 0;
 
-  var nFrames = 1;
+  var nFrames = document.getElementById('numFrames').value || 1;
   var finishedFrames = 0;
   var frames = [];
-  for (var i = 0; i < workers.length; i++) {
-    workers[i].addEventListener('message', function(e) {
+  for (var k = 0; k < workers.length; k++) {
+    workers[k].addEventListener('message', function(e) {
       frames[e.data.idx] = e.data.img;
       finishedFrames++;
       console.log('done rendering frame');
@@ -60,11 +65,11 @@ window.onload = function() {
     });
   }
 
-  for (var i = 0; i < nFrames; i++) {
+  for (var j = 0; j < nFrames; j++) {
     world.objs[1].center[0] -= (0.2 * 1/3);
 
     var job = {
-      idx: i,
+      idx: j,
       nPix: nPix,
       pixel: pixel,
       sphereRadius: 1,
@@ -81,6 +86,7 @@ window.onload = function() {
       var end = new Date().getTime();
       console.log( 'rendering took: ' + ((end - start) / 1000) + ' seconds' );
 
+      stopVid = false;
       showVid();
     }
   };
@@ -89,9 +95,11 @@ window.onload = function() {
   var showVid = function() {
     var forEver = function(f) {
       f();
-      requestAnimationFrame(function() {
+      if (!stopVid) {
+        requestAnimationFrame(function() {
           forEver(f);
-      }, 50);
+        });
+      }
     };
 
     if (frames.length == 1) {
