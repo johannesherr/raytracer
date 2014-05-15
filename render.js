@@ -31,6 +31,15 @@ var m = (function() {
     return a + b;
   };
 
+  module.selectePositive = function(vals) {
+    var ret = [];
+    for (var i = 0; i < vals.length; i++) {
+      if (vals[i] > 0.001)
+        ret.push(vals[i]);
+    }
+    return ret;
+  };
+
   module.intersectSphere = function(rayDirection, rayOrigin, sphereCenter, sphereRadius) {
     var ray = rayDirection;
     var origin = rayOrigin;
@@ -46,12 +55,18 @@ var m = (function() {
           sphereRadius;
 
     var solutions = module.solveQuad(a, b, c);
-    var ret = [];
-    for (var i = 0; i < solutions.length; i++) {
-      if (solutions[i] > 0.001)
-        ret.push(solutions[i]);
+    return module.selectePositive(solutions);
+  };
+
+  module.intersectPlane = function(ray, origin, plane) {
+    var n = plane.normal;
+    var denominator = module.dotProduct(n, ray);
+    if (Math.abs(denominator) < 0.001) {
+      return [];
+    } else {
+      var nominator = module.dotProduct(n, plane.center) - module.dotProduct(n, origin);
+      return module.selectePositive([nominator / denominator]);
     }
-    return ret;
   };
 
   module.vecMult = function(scalar, vector) {
@@ -98,117 +113,130 @@ var m = (function() {
   return module;
 }());
 
+var trace = function(ray, origin, world, limit) {
+  if (limit === 0) return null;
 
+  var result = intersect(ray, origin, world);
 
-  var trace = function(ray, origin, world, limit) {
-    if (limit === 0) return null;
+  if (result) {
+    var hitPoint = m.vecAdd(m.vecMult(result.min, ray), origin);
 
-    var result = intersect(ray, origin, world);
+    var normalDir;
+    if (result.obj.type == 'sphere') {
+      normalDir = m.vecSub(hitPoint, result.obj.center);
+    } else if (result.obj.type == 'plane') {
+      normalDir = result.obj.normal;
+    }
 
-    if (result) {
-      var hitPoint = m.vecAdd(m.vecMult(result.min, ray), origin);
-      var normalDir = m.vecSub(hitPoint, result.obj.center);
+    var getLight = function(light) {
+      var dir2 = m.vecSub(light, hitPoint);
+      var lightIsBlocked = intersect(dir2, hitPoint, world);
 
-      var getLight = function(light) {
-        var dir2 = m.vecSub(light, hitPoint);
-        var lightIsBlocked = intersect(dir2, hitPoint, world);
+      var selectedColor = result.obj.col;
+      var directLight;
+      if (lightIsBlocked) {
+        directLight = [0, 0, 0];
+        directLight[selectedColor] = 100;
+      } else {
+        var amountOfLight = Math.abs(m.dotProduct(
+          m.normalize(normalDir),
+          m.normalize(dir2)));
 
-        var selectedColor = result.obj.col;
-        var directLight;
-        if (lightIsBlocked) {
-          directLight = [100, 0, 0];
-        } else {
-          var amountOfLight = Math.abs(m.dotProduct(
-            m.normalize(normalDir),
-            m.normalize(dir2)));
-
-          directLight = [Math.max(Math.floor(255 * amountOfLight), 100), 0, 0];
-        }
-
-        return directLight;
-      };
-
-      var mirrored = trace(m.mirror(normalDir, ray), hitPoint, world, limit - 1);
-
-      var sum = [0,0,0];
-
-      var l1 = getLight(world.lights[0]);
-      var l2 = getLight(world.lights[1]);
-      for (i = 0; i < sum.length; i++) {
-        sum[i] = Math.floor((l1[i] + l2[i]) * 0.7);
+        var lightVal = Math.max(Math.floor(255 * amountOfLight), 100);
+        directLight = [0, 0, 0];
+        directLight[selectedColor] = lightVal;
       }
 
-      if (mirrored) {
-        for (var i = 0; i < sum.length; i++) {
-          sum[i] = Math.floor(sum[i] * 0.3 + mirrored[i] * 0.7);
-        }
-      }
-      return sum;
+      return directLight;
+    };
 
+    var mirrored = (result.obj.type === 'sphere') ? trace(m.mirror(normalDir, ray), hitPoint, world, limit - 1) : null;
+
+    var sum = [0,0,0];
+
+    var l1 = getLight(world.lights[0]);
+    var l2 = getLight(world.lights[1]);
+    for (i = 0; i < sum.length; i++) {
+      sum[i] = Math.floor((l1[i] + l2[i]) * 0.7);
+    }
+
+    if (mirrored) {
+      for (var i = 0; i < sum.length; i++) {
+        sum[i] = Math.floor(sum[i] * 0.4 +  mirrored[i] * 0.6);
+      }
+    }
+    return sum;
+
+  } else {
+    return null;
+  }
+};
+
+var intersect = function(ray, origin, world) {
+  var hitObj = null;
+  var col = null;
+  var min = Number.MAX_VALUE;
+  for (var i = 0; i < world.objs.length; i++) {
+    var obj = world.objs[i];
+
+    var intersections;
+    if (obj.type === 'sphere') {
+      intersections = m.intersectSphere(ray, origin, obj.center, obj.radius);
+    } else if (obj.type === 'plane') {
+      intersections = m.intersectPlane(ray, origin, obj);
     } else {
-      return null;
+      throw 'unkown object type: ' + obj.type;
     }
-  };
 
-  var intersect = function(ray, origin, world) {
-    var hitObj = null;
-    var col = null;
-    var min = Number.MAX_VALUE;
-    for (var i = 0; i < world.objs.length; i++) {
-      var obj = world.objs[i];
+    if (intersections.length !== 0) {
+      var curMin;
+      if (intersections.length == 2) {
+        curMin = Math.min(intersections[0], intersections[1]);
+      } else {
+        curMin = intersections[0];
+      }
 
-      var intersections = m.intersectSphere(ray, origin, obj.center, obj.radius);
+      if (curMin < min) {
+        min = curMin;
+        col = obj.col;
+        hitObj = obj;
+      }
+    }
+  }
 
-      if (intersections.length !== 0) {
+  if (min != Number.MAX_VALUE) {
+    return { obj: hitObj, min: min};
+  } else {
+    return null;
+  }
+};
 
-        var curMin;
-        if (intersections.length == 2) {
-          curMin = Math.min(intersections[0], intersections[1]);
+var draw = function(nPix, pixel, sphereRadius, light, light2, world) {
+  var img = [];
+  for (var py = 0; py < nPix; py++) {
+    var row = [];
+    for (var px = 0; px < nPix; px++) {
+      var ray = [
+        (px + 0.5) / nPix - 0.5,
+        0.5 - (py + 0.5) / nPix,
+          -2
+      ];
+
+      var col = trace(ray, [0, 0, 0], world, 4);
+      if (col) {
+        row.push('rgb(' + col[0] + ', ' + col[1] + ', ' + col[2] + ')');
+      } else {
+        if (ray[1] > 0) {
+          row.push('rgb(215, 215, 255)');
         } else {
-          curMin = intersections[0];
-        }
-
-        if (curMin < min) {
-          min = curMin;
-          col = obj.col;
-          hitObj = obj;
+          row.push('rgb(171, 255, 151)');
         }
       }
     }
-
-    if (min != Number.MAX_VALUE) {
-      return { obj: hitObj, min: min};
-    } else {
-      return null;
-    }
-  };
-
-  var draw = function(nPix, pixel, sphereRadius, light, light2, world) {
-    var img = [];
-    for (var py = 0; py < nPix; py++) {
-      var row = [];
-      for (var px = 0; px < nPix; px++) {
-        var ray = [
-          (px + 0.5) / nPix - 0.5,
-          0.5 - (py + 0.5) / nPix,
-            -2
-        ];
-
-        var col = trace(ray, [0, 0, 0], world, 4);
-        if (col) {
-          row.push('rgb(' + col[0] + ', ' + col[1] + ', ' + col[2] + ')');
-        } else {
-          if (ray[1] > 0) {
-            row.push('rgb(215, 215, 255)');
-          } else {
-            row.push('rgb(171, 255, 151)');
-          }
-        }
-      }
-      img.push(row);
-    }
-    return img;
-  };
+    img.push(row);
+  }
+  return img;
+};
 
 addEventListener('message', function(e) {
   postMessage({idx: e.data.idx, img: draw(e.data.nPix, e.data.pixel, e.data.sphereRadius, e.data.light, e.data.light2, e.data.world)});
