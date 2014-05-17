@@ -32,18 +32,20 @@ function raytrace() {
                 {center: [0, -0.3, 0], normal: [0, 1, 0], col: 2, type: 'plane'}],
                lights: [light, light2] };
 
-
-  var paintPixel = function(x, y, col) {
-    ctx.fillStyle = col;
-    ctx.fillRect(Math.floor(x * pixel), Math.floor(y * pixel), Math.ceil(pixel), Math.ceil(pixel));
-  };
-
   var paint = function(img) {
-    for (var y = 0; y < img.length; y++) {
-      for (var x = 0; x < img[y].length; x++) {
-        paintPixel(x, y, img[y][x]);
-      }
+    var imgData = ctx.createImageData(c.width, c.height);
+    for (var y = 0; y < c.height; y++) {
+      for (var x = 0; x < c.width; x++) {
+        var point = img[Math.floor(y / pixel)][Math.floor(x / pixel)];
+        var offset = (x + y * c.width) * 4;
+        for (var i = 0; i < point.length; i++) {
+            imgData.data[offset + i] = point[i];
+        }
+        imgData.data[offset + 3] = 255;
+     }
     }
+
+    ctx.putImageData(imgData, 0, 0);
   };
 
   var workers = [];
@@ -96,9 +98,7 @@ function raytrace() {
     var forEver = function(f) {
       f();
       if (!stopVid) {
-        requestAnimationFrame(function() {
-          forEver(f);
-        });
+        setTimeout(function() { forEver(f); }, 250);
       }
     };
 

@@ -224,12 +224,12 @@ var draw = function(nPix, pixel, sphereRadius, light, light2, world) {
 
       var col = trace(ray, [0, 0, 0], world, 4);
       if (col) {
-        row.push('rgb(' + col[0] + ', ' + col[1] + ', ' + col[2] + ')');
+        row.push([col[0], col[1], col[2]]);
       } else {
         if (ray[1] > 0) {
-          row.push('rgb(215, 215, 255)');
+          row.push([215, 215, 255]);
         } else {
-          row.push('rgb(171, 255, 151)');
+          row.push([171, 255, 151]);
         }
       }
     }
